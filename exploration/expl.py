@@ -2,13 +2,15 @@
 #%%
 import nltk
 import collections
+import warnings
+from sklearn.pipeline import Pipeline
 import pandas as pd
 import seaborn as sns
 from definitions import ROOT_DIR
 nltk.download('punkt')
 
 import string
-from src.preprocessing.custom_transformers import PunctuationRemover, StopWordsRemover
+from src.preprocessing.custom_transformers import PunctuationRemover, StopWordsRemover, IntoLowerCase
 
 
 #%%
@@ -103,59 +105,54 @@ eng_stop_words = nltk.corpus.stopwords.words('english')
 
 
 #%%
+# Add column for text transformations
+q_df['prep_text'] = q_df['question_text'].copy()
 
-
-qq = q_df.iloc[:10, :].copy()
-print(qq)
-print(" ")
-print(qq['question_text'].apply(lambda x: "".join([char for char in x if char not in string.punctuation])))
-
-punct_rem = PunctuationRemover()
-punct_rem.fit(qq, ['question_text'])
-qq_2 =  punct_rem.transform()
-print(" ")
-
-# !!!! first lower() than StopWords!!!
-sw_rem = StopWordsRemover()
-sw_rem.fit(qq_2, ['question_text'], eng_stop_words)
-sw_rem.transform()
-
-
-#qq.apply(lambda x: [w.lower() for w in x.split(' ')])
-#q_df.to_csv(ROOT_DIR + '/temp_data/quora_df_no_stop_words.csv', index=False)
-
-
-
-#%%
-# Create column where stop words are excluded
-q_df['wo_stop_words'] = (
-    q_df['question_text'].apply(
-        lambda x: [word for word in x.lower().punctuation.split(' ') 
-                   if word not in eng_stop_words]
-    )
+# create pipeline for transformation
+pipeline = Pipeline(
+    steps=[
+        ('punctuation', PunctuationRemover(['prep_text'])),
+        ('lowercase', IntoLowerCase(['prep_text'])),
+        ('stopwords', StopWordsRemover(['prep_text'], eng_stop_words))
+    ]
 )
 
-
-
-
-
-
-
+pipeline.fit_transform(q_df)
+q_df.to_csv(ROOT_DIR + '/temp_data/quora_df_no_stop_words.csv', index=False)
 
 
 #%%
 # Get the most common words for both target values
-words_count = collections.Counter()
-for row in q_df.loc[:100,'question_text']:
-    words = nltk.word_tokenize(row)
-    counts.update(words)
-    #bigram_counts.update(nltk.bigrams(words))
+def plot_counter(counter_output, top_n, n_gram, text):
+    count_df = pd.DataFrame.from_dict(counter_output, orient='index').reset_index()
+    count_df = count_df.rename(columns={'index': 'word', 0: 'count'})
+    count_df = count_df.sort_values(by='count', axis=0, ascending=False)
+    sns.barplot(x="count", y="word", data=count_df.head(top_n), palette="Blues_d").set_title('{} frequency count{}.'.format(n_gram.capitalize(), text))
 
-# https://stackoverflow.com/questions/44001167/count-phrases-frequency-in-python-dataframe
+def count_words(df, column, n_gram, top_n, text=None):
+    count = collections.Counter()
+    if n_gram == 'unigrams':
+        for row in df[column]:
+            words = nltk.word_tokenize(row)
+            count.update(words)
+    elif n_gram == 'bigrams':
+        for row in df[column]:
+            words = nltk.word_tokenize(row)
+            count.update(nltk.bigrams(words))
+    elif n_gram == 'trigrams':
+        for row in df[column]:
+            words = nltk.word_tokenize(row)
+            count.update(nltk.trigrams(words))
+    else:
+        warnings.warn("Not viable value for n_gram is provided. Please select one of the following: 'unigrams', 'bigrams', 'trigrams'.")
+    
+    # plot results
+    plot_counter(count, top_n, n_gram, text)
 
 
 #%%
-print(counts)
+count_words(q_df.head(100), 'prep_text', 'unigrams', 15, ' for whole dataset')
+
 
 
 #%%
