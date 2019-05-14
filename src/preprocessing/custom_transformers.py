@@ -61,6 +61,36 @@ class IntoLowerCase(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, df):
-        for column in self. columns:
+        for column in self.columns:
             df[column] = df[column].astype(str).str.lower()
+        return df
+
+
+class ShortToLong(BaseEstimator, TransformerMixin):
+    """Class for changing contracted forms into long form"""
+
+    def __init__(self, columns):
+        self.columns = columns
+        self.short_forms_dict = {
+            "'ve": " have",
+            "'d": " had",
+            "'s": " is",
+            "'ll": " will",
+            "'re": " are",
+            "can't": "can not",
+            "couldn't": "could not",
+            "doesn't": "does not",
+            "shouldn't": "sould not",
+            "won't": "will not",
+            "let's": "let us",
+            "don't": "do not"
+        }
+
+    def fit(self, df):
+        return self
+
+    def transform(self, df):
+        for column in self.columns:
+            for key, value in self.short_forms_dict.items():
+                df[column] = df[column].astype(str).str.replace(key, value)
         return df
