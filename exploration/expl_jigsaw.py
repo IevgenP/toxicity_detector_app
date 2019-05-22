@@ -13,7 +13,7 @@ nltk.download('punkt')
 
 import string
 from src.preprocessing.custom_transformers import PunctuationRemover, StopWordsRemover, IntoLowerCase, ShortToLong
-from src.visualizers.visualiers import get_stats, plot_counter, count_words
+from src.visualizers.visualiers import get_stats, get_tf_idf_scores
 sns.set(style="darkgrid")
 
 #%%
@@ -39,6 +39,7 @@ for column in ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity
 j_df['num_words'] = j_df['comment_text'].apply(
     lambda x: len([token for token in x.split(" ") if token != ""])
 )
+print(j_df.head(3))
 
 #%%
 # Print stats for number of words
@@ -83,8 +84,10 @@ pipeline = Pipeline(
 
 #%%
 # Transform the dataset using created pipeline
-pipeline.fit_transform(j_df)
-j_df.to_csv(ROOT_DIR + '/temp_data/jigsaw_df_no_stop_words.csv', index=False)
+#j_df_transf = pipeline.fit_transform(j_df)
+#j_df_transf.to_csv(ROOT_DIR + '/temp_data/jigsaw_df_transformed.csv', index=False)
+j_df_transf = pd.read_csv(ROOT_DIR + '/temp_data/jigsaw_df_transformed.csv')
+
 
 #%%
 # The following analysis must use tf-idf otherwise there are cases where comment 
@@ -93,56 +96,95 @@ j_df.to_csv(ROOT_DIR + '/temp_data/jigsaw_df_no_stop_words.csv', index=False)
 
 #%%
 # Count words frequency for toxic comments only
-count_words(j_df.loc[j_df['toxic'] == 1, ], 'prep_text', 'unigrams', 15, ' for toxic comments')
-plt.show()
-count_words(j_df.loc[j_df['toxic'] == 1, ], 'prep_text', 'bigrams', 15, ' for toxic comments')
-plt.show()
+df_tox_uni = get_tf_idf_scores(j_df_transf.loc[j_df_transf['toxic'] == 1, ],
+                               column='prep_text', 
+                               n_gram=1)
+print(df_tox_uni.head(10))
+
+# plot top n words
+sns.barplot(
+    x="tf_idf_score",
+    y="words", 
+    data=df_tox_uni.head(15), 
+    palette="Blues_d"
+).set_title('Toxic comments unigrams by IF-IDF')
 
 #%%
-# Count words frequency for severe toxic comments only
-count_words(j_df.loc[j_df['severe_toxic'] == 1, ], 'prep_text', 'unigrams', 15, ' for severe toxic comments')
-plt.show()
-count_words(j_df.loc[j_df['severe_toxic'] == 1, ], 'prep_text', 'bigrams', 15, ' for severe toxic comments')
-plt.show()
+df_tox_bi = get_tf_idf_scores(j_df_transf.loc[j_df_transf['toxic'] == 1, ],
+                              'prep_text',
+                              2)
+
+# plot top n words
+sns.barplot(
+    x="tf_idf_score",
+    y="words", 
+    data=df_tox_bi.head(15), 
+    palette="Blues_d"
+).set_title('Toxic comments bigrams by IF-IDF')
 
 #%%
-#%%
-# Count words frequency for obscene comments only
-count_words(j_df.loc[j_df['obscene'] == 1, ], 'prep_text', 'unigrams', 15, ' for obscene comments')
-plt.show()
-count_words(j_df.loc[j_df['obscene'] == 1, ], 'prep_text', 'bigrams', 15, ' for obscene comments')
-plt.show()
+# Many bigrams looks like repetition of the same word. It deserves additional investigation.
 
 #%%
-# Count words frequency for threat comments only
-count_words(j_df.loc[j_df['threat'] == 1, ], 'prep_text', 'unigrams', 15, ' for threat comments')
-plt.show()
-count_words(j_df.loc[j_df['threat'] == 1, ], 'prep_text', 'bigrams', 15, ' for threat comments')
-plt.show()
+print(j_df_transf.shape)
+j_df_transf = j_df_transf.dropna()
+print(j_df_transf.shape)
+
+#%%
+print(j_df_transf.loc[j_df_transf['prep_text'].str.contains('faggot faggot'), 'prep_text'].values)
+print("")
+print(j_df_transf.loc[j_df_transf['prep_text'].str.contains('shit shit'), 'prep_text'].values)
+print("")
+print(j_df_transf.loc[j_df_transf['prep_text'].str.contains('ass ass'), 'prep_text'].values)
+
+#%%
+#Some cases are trully repetition, but not all of them. 
+#Let's try to exclude most obvious with help of regex.
+
+#%%
+import re 
+def duplicates_cutter(df, column, rep_text_list):
+    df_c = df.copy()
+    for rep_text in rep_text_list:
+    #     df_c[column] = df_c[column].replace(
+    #         "(({})[\s,.?\w]*)".format(rep_text), rep_text, regex=True
+    # )
+        df_c[column] = df_c[column].str.replace(
+            r"(({})[\s,.?\w]*)".format(rep_text), rep_text
+    )
+    return df_c
+
+#%%
+j_df_transf_2 = duplicates_cutter(j_df_transf, 'prep_text', df_tox_bi['words'].tolist()[:1000])
+
+#%%
+df_tox_bi_2 = get_tf_idf_scores(j_df_transf_2.loc[j_df_transf_2['toxic'] == 1, ],
+                              'prep_text',
+                              2)
+
+# plot top n words
+sns.barplot(
+    x="tf_idf_score",
+    y="words", 
+    data=df_tox_bi_2.head(15), 
+    palette="Blues_d"
+).set_title('Toxic comments bigrams by IF-IDF')
 
 
 #%%
-# Count words frequency for insult comments only
-count_words(j_df.loc[j_df['insult'] == 1, ], 'prep_text', 'unigrams', 15, ' for insult comments')
-plt.show()
-count_words(j_df.loc[j_df['insult'] == 1, ], 'prep_text', 'bigrams', 15, ' for insult comments')
-plt.show()
-
+print(j_df_transf_2.loc[j_df_transf_2['prep_text'].str.contains('faggot faggot'), 'prep_text'].values)
+print("")
+print(j_df_transf_2.loc[j_df_transf_2['prep_text'].str.contains('shit shit'), 'prep_text'].values)
+print("")
+print(j_df_transf_2.loc[j_df_transf_2['prep_text'].str.contains('ass ass'), 'prep_text'].values)
 
 #%%
-# Count words frequency for identity_hate comments only
-count_words(j_df.loc[j_df['identity_hate'] == 1, ], 'prep_text', 'unigrams', 15, ' for identity hate comments')
-plt.show()
-count_words(j_df.loc[j_df['identity_hate'] == 1, ], 'prep_text', 'bigrams', 15, ' for identity hate comments')
-plt.show()
+df_tox_bi_2.head(10)
 
 
 
 #%%
-j_df.loc[j_df['prep_text'].str.contains('fucksex'), 'comment_text'].values
+print(j_df_transf_2.loc[j_df_transf_2['prep_text'].str.contains('cuntbag'), 'prep_text'].values)
 
-
-#%%
-np.log10(100/95+0.00001)
 
 #%%
