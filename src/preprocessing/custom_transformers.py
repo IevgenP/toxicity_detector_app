@@ -1,6 +1,7 @@
 import string
 from sklearn.base import BaseEstimator, TransformerMixin
 
+
 class PunctuationRemover(BaseEstimator, TransformerMixin):
     """Class for punctuation removal from Pandas Dataframe columns"""
 
@@ -93,4 +94,47 @@ class ShortToLong(BaseEstimator, TransformerMixin):
         for column in self.columns:
             for key, value in self.short_forms_dict.items():
                 df[column] = df[column].astype(str).str.replace(key, value)
+        return df
+
+
+class IpRemover(BaseEstimator, TransformerMixin):
+    """Class for removing ips"""
+
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, df):
+        return self
+
+    def transform(self, df):
+        for column in self.columns:
+            df[column] = df[column].astype(str).str.replace(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", "")
+        return df
+
+
+class HTTPremover(BaseEstimator, TransformerMixin):
+    """Class for removing http / https links"""
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, df):
+        return self
+
+    def transform(self, df):
+        for column in self.columns:
+            df[column] = df[column].astype(str).str.replace(r"https?://.*\.\w{1,3}", "")
+        return df
+
+
+class UserNameRemover(BaseEstimator, TransformerMixin):
+    """Class for removing articles ids"""
+    def __init__(self, columns):
+        self.columns = columns
+    
+    def fit(self, df):
+        return self
+
+    def transform(self, df):
+        for column in self.columns:
+            df[column] = df[column].astype(str).str.replace(r"\[\[User(.*)\|", "")
         return df
