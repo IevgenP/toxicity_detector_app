@@ -34,6 +34,23 @@ class PunctuationRemover(BaseEstimator, TransformerMixin):
         return df
 
 
+class NewLineRemover(BaseEstimator, TransformerMixin):
+    """Class for removing new line symbols /n"""
+
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, df):
+        return self
+
+    def transform(self, df):
+        for column in self.columns:
+            df[column] = df[column].apply(
+                lambda x: x.str().replace(r'/n', " ")
+            )
+        return df
+
+
 class StopWordsRemover(BaseEstimator, TransformerMixin):
     """Class for removing stop words from Pandas Dataframe columns"""
 
