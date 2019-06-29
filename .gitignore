@@ -4,6 +4,7 @@ experimental.py
 # raw data directory
 raw_data/
 temp_data/
+prep_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
