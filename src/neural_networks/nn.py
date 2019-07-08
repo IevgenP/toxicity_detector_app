@@ -28,6 +28,14 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[-1])
 
+    def get_config(self):
+        config = {
+            "attention_dim": self.attention_dim
+        }
+        base_config = super(SelfAttentionLayer, self).get_config()
+        config.update(base_config)
+        return config
+
 
 class CustomReduceSumLayer(tf.keras.layers.Layer):
 

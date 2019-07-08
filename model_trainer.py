@@ -20,8 +20,8 @@ with open(ROOT_DIR + '/pickled/tokenizer.pickle', 'rb') as file:
 w_index = tk.word_index
 
 # set variables
-VOCAB_SIZE = 20000,
-MAX_LEN = 200,
+VOCAB_SIZE = 20000
+MAX_LEN = 200
 EMBEDDING_DIM = 300
 ATT_UNITS = 10
 
@@ -46,16 +46,17 @@ earlystopper = tf.keras.callbacks.EarlyStopping(
     restore_best_weights=True
 )
 
-# load nerual network model
-model = BdRNN_Attention(dropout=0.2, 
-                        num_words=VOCAB_SIZE, 
-                        emb_dim=EMBEDDING_DIM, 
-                        max_len=MAX_LEN,
-                        att_units=ATT_UNITS,
-                        emb_matrix=emb_matrix,
-                        trainable_flag=True)
-
 if __name__ == "__main__":
+   
+   # load nerual network model
+    model = BdRNN_Attention(dropout=0.2, 
+                            num_words=VOCAB_SIZE, 
+                            emb_dim=EMBEDDING_DIM, 
+                            max_len=MAX_LEN,
+                            att_units=ATT_UNITS,
+                            emb_matrix=emb_matrix,
+                            trainable_flag=True)
+   
     # pring model summary
     model.summary()
 
