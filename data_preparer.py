@@ -117,10 +117,10 @@ if __name__ == '__main__':
         columns=['comment_text', 'prep_text'],
         labels=['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'], 
         split='train_val_test', 
-        test_size=0.3, 
-        random_state=111, 
+        test_size=0.2, 
+        random_state=31, 
         stratify=False,
-        multiclass=True
+        multiclass=False
     )
 
     # check that split contains all classes

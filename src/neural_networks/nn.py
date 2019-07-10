@@ -13,17 +13,19 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
         assert len(input_shape) == 3
         self.W1 = tf.Variable(self.init(shape=(input_shape[-1].value, self.attention_dim)), trainable=True, name='W1')
         self.W1 = tf.identity(self.W1)
-        self.b = tf.Variable(self.init(shape=(self.attention_dim, )), trainable=True, name='b')
-        self.b = tf.identity(self.b)
+        self.bb = tf.Variable(self.init(shape=(self.attention_dim, )), trainable=True, name='bb')
+        self.bb = tf.identity(self.bb)
         self.W2 = tf.Variable(self.init(shape=(self.attention_dim, 1)), trainable=True, name='W2')
         self.W2 = tf.identity(self.W2)
         super(SelfAttentionLayer, self).build(input_shape)
 
     def call(self, hidden_states):
-        d1 = tf.math.tanh(tf.nn.bias_add(tf.keras.backend.dot(hidden_states, self.W1), self.b))
+        d1 = tf.math.tanh(tf.nn.bias_add(tf.keras.backend.dot(hidden_states, self.W1), self.bb))
         d2 = tf.keras.backend.dot(d1, self.W2)
         weights = tf.keras.layers.Softmax(axis=1)(d2)
-        return weights
+        context_vec = tf.matmul(weights, hidden_states, transpose_a=True)
+        
+        return context_vec
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[-1])
@@ -37,16 +39,7 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
         return config
 
 
-class CustomReduceSumLayer(tf.keras.layers.Layer):
-
-    def __init__(self, **kwargs):
-        super(CustomReduceSumLayer, self).__init__(**kwargs)
-
-    def call(self, input):
-        return tf.reduce_sum(input, axis=1)
-
-
-def BdRNN_Attention(dropout=0.2, 
+def BdRNN_Attention(dropout=0.4, 
                     num_words=20000, 
                     emb_dim=128, 
                     max_len=100,
@@ -58,33 +51,31 @@ def BdRNN_Attention(dropout=0.2,
 
     embedded_sequences = tf.keras.layers.Embedding(num_words,
                                                    emb_dim,
+                                                   weights=emb_matrix,
                                                    input_length=max_len,
                                                    trainable=trainable_flag)(sequence_input)
 
-    # _h - hidden state outputs, _c - cell state outputs
-    lstm, forward_h, _, backward_h, _ = tf.keras.layers.Bidirectional(
-        tf.keras.layers.LSTM(
-            units=64,
-            dropout=0.2,
-            return_sequences=True,
-            return_state=True,
-            recurrent_activation='relu',
-            recurrent_initializer='glorot_uniform'
-        )
-    )(embedded_sequences)
+    emb_after_spatial_dr = tf.keras.layers.SpatialDropout1D(dropout)(embedded_sequences)
 
-    state_h = tf.keras.layers.Concatenate()([forward_h, backward_h])
+    # _h - hidden state outputs, _c - cell state outputs
+    gru = tf.keras.layers.Bidirectional(
+        tf.keras.layers.GRU(
+            units=128,
+            return_sequences=True
+        )
+    )(emb_after_spatial_dr)
 
     # attention mechanism
-    hidden_states_with_time_axis = tf.keras.layers.Reshape((1, state_h.shape[1]))(state_h)
-    att_weights = SelfAttentionLayer(10)(hidden_states_with_time_axis)
-    context_vec = tf.keras.layers.multiply([att_weights, lstm])
-    context_vec = CustomReduceSumLayer()(context_vec)
+    context_vec = SelfAttentionLayer(att_units)(gru)
+    avg_pool = tf.keras.layers.GlobalAveragePooling1D()(context_vec)
+    max_pool = tf.keras.layers.GlobalMaxPooling1D()(context_vec)
+    pooled = tf.keras.layers.Concatenate()([avg_pool, max_pool])
 
-    output = tf.keras.layers.Dense(6, activation='sigmoid')(context_vec)
+    #dense_1 = tf.keras.layers.Dense(256, activation='relu')(context_vec)
+    output = tf.keras.layers.Dense(6, activation='sigmoid')(pooled)
 
     model = tf.keras.Model(inputs=sequence_input, outputs=output)
-    adam = tf.keras.optimizers.Adam(lr=0.001, decay=0.01)
+    adam = tf.keras.optimizers.Adam(lr=0.001)
     model.compile(loss='binary_crossentropy',
                   optimizer=adam,
                   metrics=['acc'])
