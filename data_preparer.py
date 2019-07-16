@@ -104,18 +104,36 @@ if __name__ == '__main__':
 
     # load the data
     text_df = load_text_data(
-        data_filepath='/raw_data/jigsaw_dataset.csv',
+        data_filepath='/raw_data/jigsaw_dataset_2.csv',
         text_column='comment_text', 
         copy_text_column=True, 
         copy_col_name='prep_text'
     )
+    
+    # rename columns according to first jigsaw table
+    text_df = text_df.rename(columns={
+            'target': 'toxic', 
+            'identity_attack': 'identity_hate'
+        }
+    )
+
+    # replace fraction of human raters who consider comment to be toxic in any way
+    # to binary label of 0 or 1
+    for col in ['toxic', 'obscene', 'threat', 'insult', 'identity_hate']: #severe_toxicity excluded as it has only few positive values
+        array = text_df[col].values
+        array[array > 0.5] = 1
+        array[array <= 0.5] = 0
+        text_df[col] = array
+
+    print("Replacement of fraction of human raters into binary values is completed.")
+
     tstep = time.time()
 
     # spilit on train, validation and test sets
     x_tr, x_val, x_test, y_tr, y_val, y_test = split_dataset(
         df = text_df, 
         columns=['comment_text', 'prep_text'],
-        labels=['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'], 
+        labels=['toxic', 'obscene', 'threat', 'insult', 'identity_hate'], 
         split='train_val_test', 
         test_size=0.2, 
         random_state=31, 
@@ -145,7 +163,7 @@ if __name__ == '__main__':
         ('symbols_remover', ct.SymbolsRemover(['prep_text'])),
         ('word_tokenizer', ct.WordsTokenizerNLTK(['prep_text'])),
         ('punctuation_rem', ct.PunctuationRemover(['prep_text'])),
-        ('stop_words_rem', ct.StopWordsRemover(['prep_text'], eng_stop_words)),
+        #('stop_words_rem', ct.StopWordsRemover(['prep_text'], eng_stop_words)),
         ('pos', ct.PosTaggerNLTK(['prep_text'])),
         ('lemmatizer', ct.WordLemmatizerNLTK(['prep_text'])),
     ]
@@ -171,7 +189,7 @@ if __name__ == '__main__':
 
 
     # tokenize train and validation sets
-    tart = time.time()
+    start = time.time()
 
 
     print('fitting and saving tokenizer...')

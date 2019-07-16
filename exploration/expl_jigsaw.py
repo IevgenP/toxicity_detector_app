@@ -8,17 +8,42 @@ from sklearn.pipeline import Pipeline
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from definitions import ROOT_DIR
+from definitions_toxicity import ROOT_DIR
 nltk.download('punkt')
 
 import string
-from src.preprocessing.custom_transformers import PunctuationRemover, StopWordsRemover, IntoLowerCase, ShortToLong
-from src.visualizers.visualiers import get_stats, get_tf_idf_scores
+#from src.preprocessing.custom_transformers import PunctuationRemover, StopWordsRemover, IntoLowerCase, ShortToLong
+#from src.visualizers.visualiers import get_stats, get_tf_idf_scores
 sns.set(style="darkgrid")
 
 #%%
 # Download Jigsaw database
 j_df = pd.read_csv(ROOT_DIR+'/raw_data/jigsaw_dataset.csv')
+
+
+#%%
+# see cases with threats
+print(j_df.loc[j_df['toxic']==1, ].shape)
+
+tox_only = j_df_2.loc[
+    (j_df_2['target']==1) &
+    (j_df_2['severe_toxicity']==0) &
+    (j_df_2['obscene']==0) &
+    (j_df_2['threat']==0) &
+    (j_df_2['insult']==0) & 
+    (j_df_2['identity_attack']==0),
+]
+tox_only.shape
+
+#%%
+j_df_2[['target', 'severe_toxicity', 'obscene', 'threat', 'insult', 'identity_attack']].sum()
+
+
+#%%
+# Combine datasets from bowth Jigsaw competitions
+j_df_2 = pd.read_csv(ROOT_DIR+'/raw_data/jigsaw_dataset_2.csv')
+print(j_df.head(5))
+print(j_df_2.head(5))
 
 
 #%%

@@ -77,7 +77,7 @@ if __name__ == "__main__":
     history = model.fit(
         x=x_tr_tokenized, 
         y=y_tr, 
-        batch_size=512,
+        batch_size=2048,
         epochs=50, 
         validation_data=(x_val_tokenized, y_val),
         use_multiprocessing=False,

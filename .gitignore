@@ -6,6 +6,10 @@ raw_data/
 temp_data/
 prep_data/
 
+# temp folders
+jigsaw_1_excl_sw/
+jigsaw_2_probabilities/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
