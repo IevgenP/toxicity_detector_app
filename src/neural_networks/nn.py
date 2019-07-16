@@ -72,7 +72,7 @@ def BdRNN_Attention(dropout=0.4,
     pooled = tf.keras.layers.Concatenate()([avg_pool, max_pool])
 
     #dense_1 = tf.keras.layers.Dense(256, activation='relu')(context_vec)
-    output = tf.keras.layers.Dense(6, activation='sigmoid')(pooled)
+    output = tf.keras.layers.Dense(5, activation='sigmoid')(pooled)
 
     model = tf.keras.Model(inputs=sequence_input, outputs=output)
     adam = tf.keras.optimizers.Adam(lr=0.001)
