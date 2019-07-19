@@ -54,8 +54,10 @@ request_body = {
 }
 
 # BdRNN with attention
-url = 'http://0.0.0.0:2006/toxicity_clf'
+url = 'http://0.0.0.0:1020/toxicity_clf'
 response  = requests.post(url, json=request_body)
 print(url)
-print(response.text)
+json_resp = json.loads(response.text)
+print(json.dumps(json_resp, indent=1, sort_keys=False))
 print("-"*20)
+    

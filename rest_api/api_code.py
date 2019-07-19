@@ -67,5 +67,5 @@ class ToxicityClassifier(flask_restful.Resource):
 
 api.add_resource(ToxicityClassifier, '/toxicity_clf')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=2006, debug=True)
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=2006, debug=True)

@@ -1,0 +1,36 @@
+# dockerfile
+Dockerfile
+
+# directories to exclude
+/exploration
+/exploratory_notebooks
+/jigsaw_1_excl_sw
+/jigsaw_2_probabilities
+/prep_data
+/raw_data
+/raw_data
+/temp_data
+/val_acc_loss_charts
+
+# files to exclude
+data_preparer.py
+model_test.py
+model_trainer.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# VSCode
+.vscode/*
+
+# test
+/src/preprocessing/test_preprocessing.py
+
+# jupyter notebook files
+.ipynb_checkpoints/
