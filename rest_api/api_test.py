@@ -54,7 +54,7 @@ request_body = {
 }
 
 # BdRNN with attention
-url = 'http://0.0.0.0:1020/toxicity_clf'
+url = 'http://0.0.0.0:1080/toxicity_clf'
 response  = requests.post(url, json=request_body)
 print(url)
 json_resp = json.loads(response.text)
