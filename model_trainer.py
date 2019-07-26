@@ -1,11 +1,10 @@
 import pickle
 import tensorflow as tf
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# config.gpu_options.per_process_gpu_memory_fraction = 0.9
-# #sess = tf.Session(config=config)
-# sess = tf.keras.backend.set_session(tf.Session(config=config))
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.9
+sess = tf.keras.backend.set_session(tf.Session(config=config))
 
 import numpy as np
 from definitions_toxicity import ROOT_DIR
@@ -56,7 +55,7 @@ checkpointer = tf.keras.callbacks.ModelCheckpoint(
 earlystopper = tf.keras.callbacks.EarlyStopping(
     monitor='val_loss',
     min_delta=0.00001,
-    patience=2,
+    patience=1,
     mode='min',
     restore_best_weights=True
 )

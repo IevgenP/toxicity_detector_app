@@ -52,7 +52,12 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
         d2 = tf.keras.backend.dot(d1, self.W2)
         print('--------d2', d2.shape)
         weights = tf.keras.layers.Softmax(axis=1)(d2)
+        #weights = tf.keras.backend.max(weights, axis=2)
+        #weights = tf.keras.backend.expand_dims(weights)
+        print('---------weights after max', weights.shape)
         context_vec = tf.matmul(weights, hidden_states, transpose_a=True)
+        # context_vec = tf.keras.backend.squeeze(context_vec, axis=1)
+        print('---------context vector', context_vec.shape)
         return (context_vec, weights)
 
     def compute_output_shape(self, input_shape):
@@ -80,6 +85,19 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
 
 
 def penalize_with_att_weights(y_true, y_pred, att_weights, batch_size):
+    """Regularizer for loss based on attention weights
+    
+    :param y_true: true labels
+    :type y_true: int / float
+    :param y_pred: predicted probabilities of being classified as a label
+    :type y_pred: float
+    :param att_weights: tensor with attention weights
+    :type att_weights: 
+    :param batch_size: [description]
+    :type batch_size: [type]
+    :return: [description]
+    :rtype: [type]
+    """
 
     dot_product = tf.matmul(att_weights, att_weights, transpose_a=True)
     eye = tf.keras.backend.eye(dot_product.shape[1].value)
@@ -141,12 +159,32 @@ def BdRNN_Attention(dropout=0.4,
 
     # attention mechanism
     context_vec, att_weights = SelfAttentionLayer(att_units)(gru)
-    avg_pool = tf.keras.layers.GlobalAveragePooling1D()(context_vec)
-    max_pool = tf.keras.layers.GlobalMaxPooling1D()(context_vec)
-    pooled = tf.keras.layers.Concatenate()([avg_pool, max_pool])
 
-    #dense_1 = tf.keras.layers.Dense(256, activation='relu')(context_vec)
-    output = tf.keras.layers.Dense(5, activation='sigmoid')(pooled)
+    conv_context_2 = tf.keras.layers.Conv1D(filters=16, 
+                                          kernel_size=2,
+                                          padding='same',
+                                          kernel_initializer = "glorot_uniform",
+                                          activation='relu')(context_vec)
+    avg_pool_2 = tf.keras.layers.GlobalAveragePooling1D()(conv_context_2)
+
+    conv_context_3 = tf.keras.layers.Conv1D(filters=16, 
+                                          kernel_size=3,
+                                          padding='same',
+                                          kernel_initializer = "glorot_uniform",
+                                          activation='relu')(context_vec)
+    avg_pool_3 = tf.keras.layers.GlobalAveragePooling1D()(conv_context_3)
+
+    conv_context_5 = tf.keras.layers.Conv1D(filters=16, 
+                                          kernel_size=5,
+                                          padding='same',
+                                          kernel_initializer = "glorot_uniform",
+                                          activation='relu')(context_vec)
+    avg_pool_5 = tf.keras.layers.GlobalAveragePooling1D()(conv_context_5)
+    
+    pooled = tf.keras.layers.Concatenate()([avg_pool_2, avg_pool_3, avg_pool_5])
+
+    dense = tf.keras.layers.Dense(32, activation='relu')(pooled)
+    output = tf.keras.layers.Dense(5, activation='sigmoid')(dense)
 
     model = tf.keras.Model(inputs=sequence_input, outputs=output)
     adam = tf.keras.optimizers.Adam(lr=0.001)

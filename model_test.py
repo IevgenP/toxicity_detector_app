@@ -1,11 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# config.gpu_options.per_process_gpu_memory_fraction = 0.9
-# sess = tf.keras.backend.set_session(tf.Session(config=config))
-
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.9
+sess = tf.keras.backend.set_session(tf.Session(config=config))
 
 from definitions_toxicity import ROOT_DIR
 from src.neural_networks.nn import SelfAttentionLayer, penalize_loss
@@ -31,7 +30,7 @@ model = tf.keras.models.load_model(
 )
 
 # make predictions
-pred = model.predict(x_test_tokenized)
+pred = model.predict(x_test_tokenized, batch_size=2048)
 
 # get evaluation metrics
 print('Ground truth shape: {}, Predicitons shape: {}'.format(y_test.shape, pred.shape))

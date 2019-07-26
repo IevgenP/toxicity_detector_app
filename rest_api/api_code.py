@@ -4,10 +4,10 @@ import nltk
 import pickle
 import tensorflow as tf
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# config.gpu_options.per_process_gpu_memory_fraction = 0.9
-# sess = tf.keras.backend.set_session(tf.Session(config=config))
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.9
+sess = tf.keras.backend.set_session(tf.Session(config=config))
 
 import pandas as pd
 import numpy as np
