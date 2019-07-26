@@ -1,7 +1,20 @@
-# raw data directory
-raw_data/
-temp_data/
+# file with experiments
+experimental.py
 
+# raw data directory
+raw_data/*
+!raw_data/.keep
+temp_data/*
+!temp_data/
+prep_data/*
+!prep_data/.keep
+
+# temp folders
+jigsaw_1_excl_sw/
+jigsaw_2_probabilities/
+jigsaw_2_prob_att_1/
+pickled/att_10/
+pickled/baseline_gl300.h5
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
