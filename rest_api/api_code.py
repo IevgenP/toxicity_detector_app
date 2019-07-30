@@ -4,16 +4,16 @@ import nltk
 import pickle
 import tensorflow as tf
 
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.9
-sess = tf.keras.backend.set_session(tf.Session(config=config))
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+# config.gpu_options.per_process_gpu_memory_fraction = 0.9
+# sess = tf.keras.backend.set_session(tf.Session(config=config))
 
 import pandas as pd
 import numpy as np
 from definitions_toxicity import ROOT_DIR
 from src.neural_networks.nn import SelfAttentionLayer, penalize_loss
-from src.preprocessing import text_to_seq_utils as tts
+from src.preprocessing.text_utils import tokenize_by_sentences, fit_tokenizer, tokenize_text_with_sentences
 
 app = flask.Flask(__name__)
 api = flask_restful.Api(app)
@@ -21,6 +21,14 @@ api = flask_restful.Api(app)
 # load preprocessing pipeline
 with open(ROOT_DIR + '/pickled/prep_pipe.pickle', 'rb') as file:
     pipe = pickle.load(file)
+
+# loaded_model = tf.keras.models.load_model(
+#     ROOT_DIR + '/pickled/bd_self_att_gl300.h5', # baseline_gl300 
+#     custom_objects={
+#         'SelfAttentionLayer': SelfAttentionLayer
+#     }
+# )
+# loaded_model.summary()
 
 class ToxicityClassifier(flask_restful.Resource):
     """Class for giving prediction on specified endpoint"""
@@ -40,8 +48,9 @@ class ToxicityClassifier(flask_restful.Resource):
                 'penalization': penalize_loss(self.att_weights, self.batch_size)
             }
         )
+        loaded_model.summary
         self.model = tf.keras.models.Model(inputs=loaded_model.input,
-                                           outputs=[loaded_model.output, loaded_model.get_layer('self_attention_layer').output[1]])
+                                           outputs=[loaded_model.output, loaded_model.get_layer('self_attention_layer_1').output[1]])
 
 
     def post(self):
@@ -58,28 +67,42 @@ class ToxicityClassifier(flask_restful.Resource):
         # make preprocessing
         raw_data['prep_text'] = raw_data['text'].copy()
         prep_data = self.prep_pipe.transform(raw_data)
+        print(prep_data)
+        print('-'*10)
 
         # tokenize text
-        tokenized_text = tts.tokenize_text(prep_data,
-                                           'prep_text',
-                                            path_to_tokenizer='/pickled/tokenizer.pickle',
-                                            max_len=200, 
-                                            padding_mode='pre', 
-                                            truncating_mode='pre')
+        # transform text data into 3D vector (sample, sentences, tokens_in_sentence)
+        prep_data_sent = tokenize_by_sentences(df=prep_data, column='prep_text')
+        print(prep_data_sent)
 
-        print(prep_data)
+        # tokenize words in 3D vector
+        with open(ROOT_DIR + '/pickled/tokenizer.pickle', 'rb') as file:
+            tokenizer = pickle.load(file)
+
+        MAX_SENT_LENGTH = 100
+        MAX_SENTS = 15
+        MAX_NB_WORDS = 20000
+
+        print('tokenizing new data...')
+        tokenized_text = tokenize_text_with_sentences(
+            text_3d_vector=prep_data_sent, 
+            loaded_tokenizer=tokenizer, 
+            max_sentences=MAX_SENTS, 
+            max_sentence_length=MAX_SENT_LENGTH, 
+            max_num_words=MAX_NB_WORDS
+        )
 
         # make predictions
         predictions, weights = self.model.predict(tokenized_text)
 
-        for i in range(prep_data.shape[0]):
-            print('Sample number: {}'.format(i))
-            col = prep_data['prep_text'].values[i]
-            data = weights[i,-len(col):,:]
-            data = np.transpose(data)
-            with pd.option_context('display.max_columns', 50):
-                print(pd.DataFrame(columns=col, data=data))
-            print('--------------')
+        # for i in range(prep_data.shape[0]):
+        #     print('Sample number: {}'.format(i))
+        #     col = prep_data['prep_text'].values[i]
+        #     data = weights[i,-len(col):,:]
+        #     data = np.transpose(data)
+        #     with pd.option_context('display.max_columns', 50):
+        #         print(pd.DataFrame(columns=col, data=data))
+        #     print('--------------')
 
         # jsonify results
         pred_dict = {}

@@ -1,14 +1,16 @@
 import pickle
 import tensorflow as tf
 
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.9
-sess = tf.keras.backend.set_session(tf.Session(config=config))
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+# config.gpu_options.per_process_gpu_memory_fraction = 0.9
+# sess = tf.keras.backend.set_session(tf.Session(config=config))
+
+#tf.keras.backend.set_floatx('float16')
 
 import numpy as np
 from definitions_toxicity import ROOT_DIR
-from src.neural_networks.nn import BdRNN_Attention, RNN_CNN
+from src.neural_networks.nn import BdRNN_Attention, RNN_CNN, BdRNN_HA
 from src.neural_networks.custom_callbacks import RocAucEvaluation
 from src.preprocessing.emb_loader import PreTrainedEmbLoader
 import matplotlib.pyplot as plt
@@ -36,7 +38,7 @@ VOCAB_SIZE = 20000
 MAX_LEN = 200
 EMBEDDING_DIM = 300
 ATT_UNITS = 30
-BATCH_SIZE = 2048 #1024
+BATCH_SIZE = 256 #1024
 
 # load matrix with pretrained embeddings
 emb_loader = PreTrainedEmbLoader(VOCAB_SIZE, MAX_LEN, EMBEDDING_DIM)
@@ -69,14 +71,24 @@ roc_auc_eval = RocAucEvaluation(
 if __name__ == "__main__":
     
     # load nerual network model
-    model = BdRNN_Attention(dropout=0.2, 
-                            num_words=VOCAB_SIZE, 
-                            emb_dim=EMBEDDING_DIM, 
-                            max_len=MAX_LEN,
-                            att_units=ATT_UNITS,
-                            batch_size=BATCH_SIZE,
-                            emb_matrix=[emb_matrix],
-                            trainable_flag=True)
+    model = BdRNN_HA(dropout=0.2, 
+                    num_words=VOCAB_SIZE, 
+                    emb_dim=EMBEDDING_DIM,
+                    max_sentence_length=100, 
+                    max_sentences=15,
+                    att_units=ATT_UNITS,
+                    batch_size=None,
+                    emb_matrix=[emb_matrix],
+                    trainable_flag=True)
+
+    # model = BdRNN_Attention(dropout=0.2, 
+    #                         num_words=VOCAB_SIZE, 
+    #                         emb_dim=EMBEDDING_DIM, 
+    #                         max_len=MAX_LEN,
+    #                         att_units=ATT_UNITS,
+    #                         batch_size=BATCH_SIZE,
+    #                         emb_matrix=[emb_matrix],
+    #                         trainable_flag=True)
 
     # # baseline model
     # model = RNN_CNN(
@@ -93,6 +105,7 @@ if __name__ == "__main__":
     model.summary()
 
     # fit model
+    print('------x_tr_tokenized', x_tr_tokenized.shape)
     history = model.fit(
         x=x_tr_tokenized, 
         y=y_tr, 

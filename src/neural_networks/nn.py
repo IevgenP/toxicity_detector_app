@@ -11,7 +11,6 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
         :param attention_dim: dimension of attention layer
         :type attention_dim: int
         """
-        #self.init = tf.keras.initializers.RandomNormal()
         self.attention_dim = attention_dim
         super(SelfAttentionLayer, self).__init__(**kwargs)
 
@@ -30,7 +29,7 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
                                   initializer='zero',
                                   trainable=True,
                                   name='b')
-        self.W2 = self.add_weight(shape=(self.attention_dim, 10),
+        self.W2 = self.add_weight(shape=(self.attention_dim, 1), #10
                                   initializer='random_normal',
                                   trainable=True,
                                   name='W2')
@@ -50,14 +49,12 @@ class SelfAttentionLayer(tf.keras.layers.Layer):
         print("Shape of W1 is {}, b is {}, W2 is {}".format(self.W1.shape, self.b.shape, self.W2.shape))
         d1 = tf.keras.backend.tanh(tf.keras.backend.bias_add(tf.keras.backend.dot(hidden_states, self.W1), self.b))
         d2 = tf.keras.backend.dot(d1, self.W2)
-        print('--------d2', d2.shape)
         weights = tf.keras.layers.Softmax(axis=1)(d2)
         #weights = tf.keras.backend.max(weights, axis=2)
         #weights = tf.keras.backend.expand_dims(weights)
-        print('---------weights after max', weights.shape)
         context_vec = tf.matmul(weights, hidden_states, transpose_a=True)
         # context_vec = tf.keras.backend.squeeze(context_vec, axis=1)
-        print('---------context vector', context_vec.shape)
+        context_vec = tf.keras.backend.sum(context_vec, axis=1)
         return (context_vec, weights)
 
     def compute_output_shape(self, input_shape):
@@ -92,11 +89,11 @@ def penalize_with_att_weights(y_true, y_pred, att_weights, batch_size):
     :param y_pred: predicted probabilities of being classified as a label
     :type y_pred: float
     :param att_weights: tensor with attention weights
-    :type att_weights: 
-    :param batch_size: [description]
-    :type batch_size: [type]
-    :return: [description]
-    :rtype: [type]
+    :type att_weights: float
+    :param batch_size: size of the neural network batch during training
+    :type batch_size: int
+    :return: loss with regularizer
+    :rtype: float
     """
 
     dot_product = tf.matmul(att_weights, att_weights, transpose_a=True)
@@ -108,10 +105,77 @@ def penalize_with_att_weights(y_true, y_pred, att_weights, batch_size):
 
 #https://stackoverflow.com/a/45963039
 def penalize_loss(att_weights, batch_size): 
+    """Wrapper that make new loss function acceptable by Keras
+    
+    :param att_weights: tensor with attention weights
+    :type att_weights: float
+    :param batch_size: size of the neural network batch during training
+    :type batch_size: ште
+    :return: loss with regularization
+    :rtype: float
+    """
     def penalization(y_true, y_pred):
         return penalize_with_att_weights(y_true, y_pred, att_weights, batch_size)
     return penalization
+
+
+def BdRNN_HA(dropout=0.4, 
+             num_words=20000, 
+             emb_dim=128,
+             max_sentence_length=100, 
+             max_sentences=15,
+             att_units=10,
+             batch_size=None,
+             emb_matrix=None,
+             trainable_flag=True):
+    """RNN with hierarchical attention
     
+    :param dropout: dropout fraction applied to different layers, defaults to 0.4
+    :type dropout: float, optional
+    :param num_words: max number of words in dictionary, defaults to 20000
+    :type num_words: int, optional
+    :param emb_dim: dimension of embeddings that represent words, defaults to 128
+    :type emb_dim: int, optional
+    :param max_sentence_length: maximum number of words in a sentence, defaults to 100
+    :type max_sentence_length: int, optional
+    :param max_sentences: maximum number of sentences in one sample, defaults to 15
+    :type max_sentences: int, optional
+    :param att_units: dimenstion of first hidden layer in attention layer, defaults to 10
+    :type att_units: int, optional
+    :param batch_size: size of batch fed to neral network during training, defaults to None
+    :type batch_size: int, optional
+    :param emb_matrix: pre-trained embedding matrix, defaults to None
+    :type emb_matrix: numpy array, optional
+    :param trainable_flag: boolean that defines whether embeddings should be trained or not, defaults to True
+    :type trainable_flag: bool, optional
+    :return: model
+    """
+    
+    input_sentence = tf.keras.layers.Input(shape=(max_sentence_length, ), dtype='int32')
+    embedded_sequences = tf.keras.layers.Embedding(
+        num_words,
+        emb_dim,
+        weights=emb_matrix,
+        input_length=max_sentence_length,
+        trainable=trainable_flag
+    )(input_sentence)
+    gru_sentence = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(units=128, return_sequences=True))(embedded_sequences)
+    att_sentence, weights_of_words = SelfAttentionLayer(attention_dim=att_units)(gru_sentence)
+    SentenceEncoder = tf.keras.models.Model(input_sentence, att_sentence)
+
+    input_sample = tf.keras.layers.Input(shape=(max_sentences, max_sentence_length), dtype='int32')
+    dense_sample = tf.keras.layers.TimeDistributed(SentenceEncoder)(input_sample)
+    gru_sample = tf.keras.layers.Bidirectional(tf.keras.layers.GRU(units=128, return_sequences=True))(dense_sample)
+    att_sample, weights_of_sentences = SelfAttentionLayer(attention_dim=att_units)(gru_sample)
+    output = tf.keras.layers.Dense(units=5, activation='sigmoid')(att_sample)
+    model = tf.keras.models.Model(input_sample, output)
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',
+                  metrics=['acc'])
+
+    return model
+
 
 def BdRNN_Attention(dropout=0.4, 
                     num_words=20000, 

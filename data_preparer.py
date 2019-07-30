@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     # spilit on train, validation and test sets
     x_tr, x_val, x_test, y_tr, y_val, y_test = split_dataset(
-        df = text_df.iloc[:2000, :], 
+        df = text_df, 
         columns=['comment_text', 'prep_text'],
         labels=['toxic', 'obscene', 'threat', 'insult', 'identity_hate'], 
         split='train_val_test', 
@@ -212,8 +212,8 @@ if __name__ == '__main__':
 
     print('tokenizing train, test and validation sets...')
     for dset, path in [(x_tr_sent, '/prep_data/x_tr_tokenized.npy'),
-                       (x_test_sent, '/prep_data/x_val_tokenized.npy'),
-                       (x_val_sent, '/prep_data/x_test_tokenized.npy')]:
+                       (x_test_sent, '/prep_data/x_test_tokenized.npy'),
+                       (x_val_sent, '/prep_data/x_val_tokenized.npy')]:
         print(path)
         tokenize_text_with_sentences(text_3d_vector=dset, 
                                     loaded_tokenizer=tokenizer, 
