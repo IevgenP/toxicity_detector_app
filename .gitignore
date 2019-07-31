@@ -1,5 +1,5 @@
-# file with experiments
-experimental.py
+# folder with experiments
+exp/
 
 # raw data directory
 raw_data/*

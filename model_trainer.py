@@ -1,16 +1,8 @@
 import pickle
 import tensorflow as tf
-
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# config.gpu_options.per_process_gpu_memory_fraction = 0.9
-# sess = tf.keras.backend.set_session(tf.Session(config=config))
-
-#tf.keras.backend.set_floatx('float16')
-
 import numpy as np
 from definitions_toxicity import ROOT_DIR
-from src.neural_networks.nn import BdRNN_Attention, RNN_CNN, BdRNN_HA
+from src.neural_networks.nn import BdRNN_HA
 from src.neural_networks.custom_callbacks import RocAucEvaluation
 from src.preprocessing.emb_loader import PreTrainedEmbLoader
 import matplotlib.pyplot as plt
@@ -38,10 +30,10 @@ VOCAB_SIZE = 20000
 MAX_LEN = 200
 EMBEDDING_DIM = 300
 ATT_UNITS = 30
-BATCH_SIZE = 256 #1024
+BATCH_SIZE = 256
 
 # load matrix with pretrained embeddings
-emb_loader = PreTrainedEmbLoader(VOCAB_SIZE, MAX_LEN, EMBEDDING_DIM)
+emb_loader = PreTrainedEmbLoader(VOCAB_SIZE, EMBEDDING_DIM)
 emb_loader.load_pre_trained('/home/ievgen/projects/pretr_emb/wiki-news-300d-1M.vec')
 emb_matrix = emb_loader.prepare_embedding_matrix(word_index=w_index)
 emb_matrix = emb_matrix[1:]
@@ -80,32 +72,11 @@ if __name__ == "__main__":
                     batch_size=None,
                     emb_matrix=[emb_matrix],
                     trainable_flag=True)
-
-    # model = BdRNN_Attention(dropout=0.2, 
-    #                         num_words=VOCAB_SIZE, 
-    #                         emb_dim=EMBEDDING_DIM, 
-    #                         max_len=MAX_LEN,
-    #                         att_units=ATT_UNITS,
-    #                         batch_size=BATCH_SIZE,
-    #                         emb_matrix=[emb_matrix],
-    #                         trainable_flag=True)
-
-    # # baseline model
-    # model = RNN_CNN(
-    #     dropout=0.2, 
-    #     num_words=VOCAB_SIZE, 
-    #     emb_dim=EMBEDDING_DIM, 
-    #     max_len=MAX_LEN,
-    #     att_units=ATT_UNITS,
-    #     emb_matrix=[emb_matrix],
-    #     trainable_flag=True
-    # )
    
     # pring model summary
     model.summary()
 
     # fit model
-    print('------x_tr_tokenized', x_tr_tokenized.shape)
     history = model.fit(
         x=x_tr_tokenized, 
         y=y_tr, 
@@ -116,7 +87,7 @@ if __name__ == "__main__":
     )
     
     # save model
-    model.save(ROOT_DIR + '/pickled/bd_self_att_gl300.h5') # baseline_gl300.h5
+    model.save(ROOT_DIR + '/pickled/bd_self_att_gl300.h5')
 
     # plot history for loss and accuracy
     fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1)

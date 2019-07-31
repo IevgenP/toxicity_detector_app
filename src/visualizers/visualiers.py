@@ -28,15 +28,18 @@ def get_stats(df, colum_content, column):
 
     return sns.distplot(df[column])
 
-
-# def plot_counter(count_df, top_n, n_gram, text):
-#     """Function for getting the most common words for both target values"""
-#     count_df = count_df.rename(columns={'index': 'word', 0: 'TF-IDF count'})
-#     count_df = count_df.sort_values(by='TF-IDF count', axis=0, ascending=False)
-#     sns.barplot(x="TF-IDF count", y="word", data=count_df.head(top_n), palette="Blues_d").set_title('{} IF-IDF count{}.'.format(n_gram.capitalize(), text))
-
-
 def get_tf_idf_scores(df, column, n_gram):
+    """Function for plotting tf-idf scores
+    
+    :param df: dataframe with prepared text colum
+    :type df: Pandas dataframe
+    :param column: name of column with prepared text data
+    :type column: string
+    :param n_gram: quantity of words in each n_gram
+    :type n_gram: int
+    :return: dataframe with tf-idf scores of n_grams
+    :rtype: Pandas dataframe
+    """
     vectorizer = TfidfVectorizer(analyzer='word',
                                  ngram_range=(n_gram,n_gram),
                                  max_df=100000,

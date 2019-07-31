@@ -13,5 +13,5 @@ COPY . /toxicity
 ENV PYTHONPATH=${PYTHONPATH}:/toxicity/
 
 RUN python3 -m nltk.downloader punkt averaged_perceptron_tagger wordnet
-EXPOSE 1020
+EXPOSE 1080
 ENTRYPOINT ["bash", "./rest_api/boot.sh"]

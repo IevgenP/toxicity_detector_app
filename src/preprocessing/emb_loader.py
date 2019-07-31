@@ -4,13 +4,24 @@ import numpy as np
 
 
 class PreTrainedEmbLoader():
+    """Class for loading pre-trained embeddings"""
 
-    def __init__(self, VOCAB_SIZE, MAX_LEN, EMBEDDING_DIM):
+    def __init__(self, VOCAB_SIZE, EMBEDDING_DIM):
+        """
+        :param VOCAB_SIZE: max size of vocabulary
+        :type VOCAB_SIZE: int
+        :param EMBEDDING_DIM: dimension of the vector that represents a token (word)
+        :type EMBEDDING_DIM: int
+        """
         self.VOCAB_SIZE = VOCAB_SIZE
-        self.MAX_LEN = MAX_LEN
         self.EMBEDDING_DIM = EMBEDDING_DIM
 
     def load_pre_trained(self, filepath):
+        """Function for loading pre-trained embeddings
+        
+        :param filepath: path to file with pre-trained embeddings
+        :type filepath: string
+        """
         vocab_keys = []
         self.embedding_dict = {}
         with open(filepath, 'r', encoding='UTF-8') as file:
@@ -23,6 +34,15 @@ class PreTrainedEmbLoader():
         return self
 
     def prepare_embedding_matrix(self, word_index):
+        """Replace words in word index dictionary for pre-trained embeddings
+        or, if word is not in index, for randomly initialized vector.
+        The result is presented as a matrix
+        
+        :param word_index: word index retrieved from Keras Tokenizer
+        :type word_index: dictionary
+        :return: matrix with vector representation of each word in word index
+        :rtype: numpy array
+        """
         num_words = min(self.VOCAB_SIZE, len(word_index))+1
         embedding_matrix = np.zeros((num_words, self.EMBEDDING_DIM))
         for word, i in word_index.items():

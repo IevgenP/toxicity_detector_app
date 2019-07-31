@@ -2,7 +2,7 @@
 Dockerfile
 
 # directories to exclude
-/exploration
+/exp
 /exploratory_notebooks
 /jigsaw_1_excl_sw
 /jigsaw_2_probabilities

@@ -12,13 +12,46 @@ from skmultilearn.model_selection import iterative_train_test_split
 
 
 def load_text_data(data_filepath, text_column, copy_text_column=False, copy_col_name=None):
-    # load dataset
+    """Data loader
+    
+    :param data_filepath: file path to data
+    :type data_filepath: string
+    :param text_column: name of column with text
+    :type text_column: string
+    :param copy_text_column: whether to copy column with text into new one, defaults to False
+    :type copy_text_column: bool, optional
+    :param copy_col_name: name of new column for copying original one, defaults to None
+    :type copy_col_name: boolean, optional
+    :return: dataframe with text data
+    :rtype: Pandas dataframe
+    """
     df = pd.read_csv(ROOT_DIR + data_filepath)
     if copy_text_column:
         df[copy_col_name] = df[text_column].copy()
     return df
 
-def split_dataset(df, columns, labels, split='train_test', test_size=0.3, random_state=111, stratify=False, multiclass=False): 
+def split_dataset(df, columns, labels, split='train_test', test_size=0.3, random_state=111, stratify=False, multiclass=False):
+    """Data split function that can use both sklearn train_test_split and skmultilearn iterative_train_test_split for cases with imbalanced multilabel data. 
+    
+    :param df: dataframe that requires splitting into train, test and possibly validation sets
+    :type df: Pandas dataframe
+    :param columns: names of columns that will be left in train/test/valiation sets
+    :type columns: list
+    :param labels: name of columns that represent labels
+    :type labels: list
+    :param split: selection of how to split dataset: train_test or train_val_test, defaults to 'train_test'
+    :type split: str, optional
+    :param test_size: fraction of whole dataset to be used as test set, defaults to 0.3
+    :type test_size: float, optional
+    :param random_state: random state for splitting, defaults to 111
+    :type random_state: int, optional
+    :param stratify: whether to stratify the data, defaults to False
+    :type stratify: bool, optional
+    :param multiclass: whether dataset has multiclass labels, defaults to False
+    :type multiclass: bool, optional
+    :return: train, test and optionally validation sets
+    :rtype: Pandas dataframe
+    """
     # split on train and validation sets
     assert split == 'train_test' or split == 'train_val_test', "Split attribute accepts only 'train_test' or 'train_val_test'"
     strat = None
@@ -72,6 +105,29 @@ def apply_pipeline(x_tr,
                    prep_x_tr_filepath=None,
                    prep_x_val_filepath=None,
                    prep_x_test_filepath=None):
+    """Function for applying skleran pipeline to train and test/validation datasets
+    
+    :param x_tr: training data
+    :type x_tr: Pandas dataframe
+    :param x_test: test data
+    :type x_test: Pandas dataframe
+    :param steps_list: list of steps, where each element is a transformer acceptable by skleran Pipeline
+    :type steps_list: list
+    :param x_val: validation data, defaults to None
+    :type x_val: Pandas dataframe, optional
+    :param save_pipeline: whether to save fitted pipeline, defaults to False
+    :type save_pipeline: bool, optional
+    :param save_pipeline_filepath: file path for saving pipeline, defaults to None
+    :type save_pipeline_filepath: string, optional
+    :param save_preprocessed: whether to save preprocessed data, defaults to False
+    :type save_preprocessed: bool, optional
+    :param prep_x_tr_filepath: file path for saving preprocessed train data, defaults to None
+    :type prep_x_tr_filepath: string, optional
+    :param prep_x_val_filepath: file path for saving preprocessed validation data, defaults to None
+    :type prep_x_val_filepath: string, optional
+    :param prep_x_test_filepath: file path for saving preprocessed test data, defaults to None
+    :type prep_x_test_filepath: string, optional
+    """
 
     # build pipeline from prepared blocks
     pipe = Pipeline(steps=steps_list)
@@ -162,8 +218,6 @@ if __name__ == '__main__':
         ('short_to_long', ct.ShortToLong(['prep_text'])),
         ('symbols_remover', ct.SymbolsRemover(['prep_text'])),
         ('word_tokenizer', ct.WordsTokenizerNLTK(['prep_text'])),
-        #('punctuation_rem', ct.PunctuationRemover(['prep_text'])),
-        #('stop_words_rem', ct.StopWordsRemover(['prep_text'], eng_stop_words)),
         ('pos', ct.PosTaggerNLTK(['prep_text'])),
         ('lemmatizer', ct.WordLemmatizerNLTK(['prep_text'])),
     ]
@@ -214,8 +268,7 @@ if __name__ == '__main__':
     for dset, path in [(x_tr_sent, '/prep_data/x_tr_tokenized.npy'),
                        (x_test_sent, '/prep_data/x_test_tokenized.npy'),
                        (x_val_sent, '/prep_data/x_val_tokenized.npy')]:
-        print(path)
-        tokenize_text_with_sentences(text_3d_vector=dset, 
+        tokenize_text_with_sentences(text_samples_list=dset, 
                                     loaded_tokenizer=tokenizer, 
                                     max_sentences=MAX_SENTS, 
                                     max_sentence_length=MAX_SENT_LENGTH, 
