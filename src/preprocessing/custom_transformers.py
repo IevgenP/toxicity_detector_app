@@ -82,6 +82,7 @@ class ShortToLong(BaseEstimator, TransformerMixin):
     def __init__(self, columns):
         self.columns = columns
         self.short_forms_dict = {
+            "’": "'",
             "'ve": " have",
             "'d": " had",
             "'s": " is",
@@ -116,7 +117,7 @@ class SymbolsRemover(BaseEstimator, TransformerMixin):
 
     def transform(self, df):
         for column in self.columns:
-            df[column] = df[column].astype(str).str.replace(r"[!@#\$\-<>:,'\"(\.)\+]+", "")
+            df[column] = df[column].astype(str).str.replace(r"[“@#\$\-<>:'\"\+]+|(\.{3})", "")
         return df
 
 

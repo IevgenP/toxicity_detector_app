@@ -5,7 +5,7 @@ from src.preprocessing import custom_transformers as ct
 from sklearn.pipeline import Pipeline
 import nltk
 import pickle
-from src.preprocessing import text_to_seq_utils as tts
+from src.preprocessing.text_utils import tokenize_by_sentences, fit_tokenizer, tokenize_text_with_sentences
 import numpy as np
 from sklearn.model_selection import train_test_split
 from skmultilearn.model_selection import iterative_train_test_split
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         ('short_to_long', ct.ShortToLong(['prep_text'])),
         ('symbols_remover', ct.SymbolsRemover(['prep_text'])),
         ('word_tokenizer', ct.WordsTokenizerNLTK(['prep_text'])),
-        ('punctuation_rem', ct.PunctuationRemover(['prep_text'])),
+        #('punctuation_rem', ct.PunctuationRemover(['prep_text'])),
         #('stop_words_rem', ct.StopWordsRemover(['prep_text'], eng_stop_words)),
         ('pos', ct.PosTaggerNLTK(['prep_text'])),
         ('lemmatizer', ct.WordLemmatizerNLTK(['prep_text'])),
@@ -187,32 +187,41 @@ if __name__ == '__main__':
     tstep = time.time()
     print('Pipeline is trained and applied to datasets. Time required: {}'.format(tstep-start))
 
-
-    # tokenize train and validation sets
+    # fit word-level tokenizer
+    MAX_NB_WORDS = 20000
     start = time.time()
-
-
     print('fitting and saving tokenizer...')
-    tts.fit_tokenizer(x_tr_prep, 
-                     'prep_text', 
-                     vocab_size=20000,
-                     save=True, 
-                     path_to_tokenizer='/pickled/tokenizer.pickle')
+    fit_tokenizer(x_tr_prep, 
+                  'prep_text', 
+                  vocab_size=MAX_NB_WORDS,
+                  save=True, 
+                  path_to_tokenizer='/pickled/tokenizer.pickle')
+
+    
+    # transform text data into 3D vector (sample, sentences, tokens_in_sentence)
+    x_tr_sent = tokenize_by_sentences(df=x_tr, column='prep_text')
+    x_test_sent = tokenize_by_sentences(df=x_test, column='prep_text')
+    x_val_sent = tokenize_by_sentences(df=x_val, column='prep_text')
+
+    # tokenize words in 3D vector
+    with open(ROOT_DIR + '/pickled/tokenizer.pickle', 'rb') as file:
+        tokenizer = pickle.load(file)
+
+    MAX_SENT_LENGTH = 100
+    MAX_SENTS = 15
 
     print('tokenizing train, test and validation sets...')
-
-    for dset, path in [(x_tr_prep, '/prep_data/x_tr_tokenized.npy'),
-                       (x_val_prep, '/prep_data/x_val_tokenized.npy'),
-                       (x_test_prep, '/prep_data/x_test_tokenized.npy')]:
-        
-        tts.tokenize_text(dset,
-                         'prep_text',
-                         path_to_tokenizer='/pickled/tokenizer.pickle',
-                         max_len=200, 
-                         padding_mode='pre', 
-                         truncating_mode='pre',
-                         save=True,
-                         save_path=path)
+    for dset, path in [(x_tr_sent, '/prep_data/x_tr_tokenized.npy'),
+                       (x_test_sent, '/prep_data/x_test_tokenized.npy'),
+                       (x_val_sent, '/prep_data/x_val_tokenized.npy')]:
+        print(path)
+        tokenize_text_with_sentences(text_3d_vector=dset, 
+                                    loaded_tokenizer=tokenizer, 
+                                    max_sentences=MAX_SENTS, 
+                                    max_sentence_length=MAX_SENT_LENGTH, 
+                                    max_num_words=MAX_NB_WORDS, 
+                                    save=True, 
+                                    save_path=path)
 
     tstep = time.time()
     print('Tokenizer is trained and applied to datasets. Time required: {}'.format(tstep-start))
