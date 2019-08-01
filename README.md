@@ -25,10 +25,12 @@ Output:
 
 Example of request through Python `requests` library:
 
-***Please notice, that examples in `api_test.py` where created for testing the model and do not reflect my opinion regarding any identities mentioned in the example.***
 Open root directory of the cloned repository and run `python rest_api/api_test.py` (this may require installation of libraries imported in file api_test.py)
 
+***Please notice, that examples in `api_test.py` where created for testing the model and do not reflect my opinion regarding any identities mentioned in the example.***
+
 Output:
+```
  {
  "1": "{'toxic': 0.003, 'obscene': 0.0008, 'threat': 0.0005, 'insult': 0.0015, 'identity_hate': 1e-04}",
  "2": "{'toxic': 0.9964, 'obscene': 0.7519, 'threat': 0.0017, 'insult': 0.9904, 'identity_hate': 0.0057}",
@@ -42,6 +44,7 @@ Output:
  "10": "{'toxic': 0.0008, 'obscene': 0.0002, 'threat': 1e-04, 'insult': 0.0004, 'identity_hate': 0.0}",
  "11": "{'toxic': 0.617, 'obscene': 0.0037, 'threat': 0.0508, 'insult': 0.2092, 'identity_hate': 0.0048}"
 }
+```
 
 ## Training the model
 
@@ -86,6 +89,7 @@ Then the same is done but on a sentence level to get vector representation of wh
 The whole scheme is presented below, except the softmax as the last step. As it is a multiclass problem we use 5 units and sigmoid activation for last dense layer of the network.
 
 ![Alt text](./ha.png?raw=true "Hierarchical attention")
+
 Source: https://www.cs.cmu.edu/~hovy/papers/16HLT-hierarchical-attention-networks.pdf
 
 ### Visualization of training process
@@ -101,7 +105,10 @@ But the most interesting testing can be done by live feeding model with differen
 
 Here is the citing of explanations to the dataset on Kaggle: 
 ```
-"Each comment in Train has a toxicity label (target), and models should predict the target toxicity for the Test data. This attribute (and all others) are fractional values which represent the fraction of human raters who believed the attribute applied to the given comment. For evaluation, test set examples with target >= 0.5 will be considered to be in the positive class (toxic)."
+"Each comment in Train has a toxicity label (target), and models should predict the target toxicity for the Test data. 
+This attribute (and all others) are fractional values which represent the fraction of human raters who believed the 
+attribute applied to the given comment. 
+For evaluation, test set examples with target >= 0.5 will be considered to be in the positive class (toxic)."
 ```
 
 Thus trained model learned some subjectivity of raters. We may hope that by averaging subjective assessments of many people we can get an objective point of view. But can opinion of many be considered as one that is free from any bias? Well this is not something I'm not going to discuss here :)
